@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { extractDirectory, buildTokenPersistCommand, buildShellCommand } from "./session-header-actions-helpers"
+import { extractDirectory, buildTokenPersistCommand, buildShellCommand, findTerminalsByTitle } from "./session-header-actions-helpers"
 
 describe("extractDirectory", () => {
   test("returns string as-is", () => {
@@ -80,5 +80,39 @@ describe("buildShellCommand", () => {
     expect(result.args[0]).toBe("-c")
     expect(result.args[1]).toContain("mkdir -p ~/.config/laterapi")
     expect(result.args[1]).toEndWith("latervibe start --wait")
+  })
+})
+
+describe("findTerminalsByTitle", () => {
+  const terminals = [
+    { id: "pty-1", title: "Run" },
+    { id: "pty-2", title: "Terminal 1" },
+    { id: "pty-3", title: "Run" },
+    { id: "pty-4", title: "Publish" },
+    { id: "pty-5", title: "Setup" },
+  ]
+
+  test("finds all terminals matching the label", () => {
+    expect(findTerminalsByTitle(terminals, "Run")).toEqual(["pty-1", "pty-3"])
+  })
+
+  test("finds single match", () => {
+    expect(findTerminalsByTitle(terminals, "Publish")).toEqual(["pty-4"])
+  })
+
+  test("returns empty array when no match", () => {
+    expect(findTerminalsByTitle(terminals, "Deploy")).toEqual([])
+  })
+
+  test("does not match partial titles", () => {
+    expect(findTerminalsByTitle(terminals, "Terminal")).toEqual([])
+  })
+
+  test("does not match Setup terminal", () => {
+    expect(findTerminalsByTitle(terminals, "Run")).not.toContain("pty-5")
+  })
+
+  test("handles empty terminal list", () => {
+    expect(findTerminalsByTitle([], "Run")).toEqual([])
   })
 })

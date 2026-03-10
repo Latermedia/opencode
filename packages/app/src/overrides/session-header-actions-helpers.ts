@@ -19,3 +19,11 @@ export function buildShellCommand(command: string, args: string[], prefix: strin
   const cmd = [command, ...args].join(" ")
   return { command: "sh", args: ["-c", prefix + cmd] }
 }
+
+/**
+ * Return IDs of terminals whose title matches the given label.
+ * Used to find previous Run/Publish terminals before spawning a new one.
+ */
+export function findTerminalsByTitle(terminals: { id: string; title: string }[], label: string): string[] {
+  return terminals.filter((t) => t.title === label).map((t) => t.id)
+}
