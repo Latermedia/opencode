@@ -10,7 +10,7 @@ import { decode64 } from "@/utils/base64"
 import { base64Encode } from "@opencode-ai/util/encode"
 import { SettingsPopup } from "./settings-popup"
 import { DialogSelectDirectory } from "./dialog-select-directory"
-import { extractDirectory, buildTokenPersistCommand, buildShellCommand } from "./session-header-actions-helpers"
+import { extractDirectory, buildTokenPersistCommand, buildShellCommand, findTerminalsByTitle } from "./session-header-actions-helpers"
 import { Tooltip } from "@opencode-ai/ui/tooltip"
 import { previewOpen, setPreviewOpen } from "./preview-panel"
 
@@ -76,6 +76,17 @@ export function SessionHeaderActions() {
   })
   onCleanup(() => window.removeEventListener("preview-run", onPreviewRun))
 
+  // LATER OVERRIDE: Close previous Run/Publish terminal before starting a new
+  // one.  Without this, each click spawns a new PTY whose child processes
+  // (npm, vite, etc.) stay alive and slowly consume all available memory.
+  // Upstream has no equivalent — keep this on merge.
+  const closePreviousTerminal = (label: string) => {
+    const ids = findTerminalsByTitle(terminal.all(), label)
+    for (const id of ids) {
+      terminal.close(id)
+    }
+  }
+
   const runCommand = (input: { command: string; args?: string[]; label: string; env?: Record<string, string> }) => {
     if (!params.dir) {
       showToast({
@@ -85,6 +96,8 @@ export function SessionHeaderActions() {
       })
       return
     }
+
+    closePreviousTerminal(input.label)
 
     const cwd = decode64(params.dir) ?? params.dir
     const bqToken = bigqueryToken()
